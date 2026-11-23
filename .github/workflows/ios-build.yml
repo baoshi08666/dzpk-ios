@@ -40,6 +40,11 @@ jobs:
           chmod +x proj/*.sh 2>/dev/null || true
           find proj -name "*.sh" -print0 | xargs -0 chmod +x 2>/dev/null || true
           ls proj | head -30
+      - name: Apply UI patch source
+        run: |
+          curl -sSfL -o "proj/Classes/Native/Bulk_Unity.Model_1.cpp" "https://github.com/${{ github.repository }}/releases/download/v1/patch_Bulk_Unity.Model_1.cpp"
+          grep -c "0.0f), /\*hidden argument\*/" "proj/Classes/Native/Bulk_Unity.Model_1.cpp" || true
+          ls -la "proj/Classes/Native/Bulk_Unity.Model_1.cpp"
 
       - name: Stub missing native plugins (chat / bugly / recorder)
         run: |
