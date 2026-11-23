@@ -1,8 +1,8 @@
-name: probe-mac
+name: probe-macos-15-intel
 on:
   workflow_dispatch:
 jobs:
   ping:
-    runs-on: macos-14
+    runs-on: macos-15-intel
     steps:
-      - run: sw_vers && xcodebuild -version
+      - run: sw_vers && uname -m
