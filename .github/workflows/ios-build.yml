@@ -38,7 +38,7 @@ jobs:
           mkdir -p proj
           tar -xzf RedPoker_iOS.tar.gz -C proj
           chmod +x proj/*.sh 2>/dev/null || true
-          find proj -name '*.sh' -exec chmod +x {} \\; 2>/dev/null || true
+          find proj -name "*.sh" -print0 | xargs -0 chmod +x 2>/dev/null || true
           ls proj | head -30
 
       - name: Stub missing native plugins (chat / bugly / recorder)
@@ -103,7 +103,7 @@ jobs:
       - name: Package IPA
         run: |
           set -e
-          APP="$GITHUB_WORKSPACE/build/Unity-iPhone.app"
+          APP=$(ls -d "$GITHUB_WORKSPACE/build"/*.app | head -1)
           ls -la "$GITHUB_WORKSPACE/build" || true
           mkdir -p "$GITHUB_WORKSPACE/out/Payload"
           cp -R "$APP" "$GITHUB_WORKSPACE/out/Payload/"
