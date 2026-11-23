@@ -39,6 +39,40 @@ jobs:
           tar -xzf RedPoker_iOS.tar.gz -C proj
           ls proj | head -30
 
+      - name: Stub out Ntalker plugin (chat disabled)
+        run: |
+          cat > "$GITHUB_WORKSPACE/proj/Libraries/Plugins/iOS/CallByUnityController.mm" <<'EOF'
+          #import <Foundation/Foundation.h>
+          #import <UIKit/UIKit.h>
+
+          extern "C" {
+            NSString* _CreateNSString(const char* string) { return string ? [NSString stringWithUTF8String:string] : nil; }
+            void _OpenPhotoLibrary() {}
+            void _OpenPhotoAblums() {}
+            void _OpenCamera() {}
+            void CallByUnity(const char *jsonContent) {}
+            void IMLogin(const char *userID, const char *token, int appID, const char *systemSender) {}
+            void IMLoginOut() {}
+            bool StartRecord() { return false; }
+            void PlayVoice(const char *path) {}
+            void StopVoice() {}
+            bool IsPlayingVoice() { return false; }
+            void SetVolume(float volume) {}
+            void IMSendMessage(const char *str) {}
+            void SetConversation(const char *groupId) {}
+            void ClearConversation() {}
+            int GetImState() { return -1; }
+            void ApplyJoinGroup(const char *groupId) {}
+            void UpdateShowStatusBar(bool show) {}
+            void SaveImageToNative(const void *bytes, long length) {}
+            void KeFuInit(const char *siteid, const char *sdkkey) {}
+            int KeFuLogin(const char *userId, const char *userName) { return 0; }
+            void KeFuLoginOut() {}
+            int StartChat(const char *settingid, const char *groupName, const char *strbody) { return 0; }
+          }
+          EOF
+          echo "stubbed"
+
       - name: Build with xcodebuild
         run: |
           set -o pipefail
