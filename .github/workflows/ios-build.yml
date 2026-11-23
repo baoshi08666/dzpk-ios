@@ -13,18 +13,29 @@ jobs:
         run: |
           xcodebuild -version
           sw_vers
+          uname -m
 
       - name: Download project parts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          mkdir -p parts
-          gh release download v1 --repo "${{ github.repository }}" --pattern 'part*' --dir parts
-          ls parts | head -5
-          ls parts | wc -l
+          EXPECTED=396909461
+          for attempt in 1 2 3 4 5; do
+            rm -rf parts RedPoker_iOS.tar.gz
+            mkdir -p parts
+            gh release download v1 --repo "${{ github.repository }}" --pattern 'part*' --dir parts --clobber || true
+            n=$(ls parts | wc -l | tr -d ' ')
+            echo "attempt $attempt: downloaded $n parts"
+            if [ "$n" -eq 76 ]; then break; fi
+            sleep 10
+          done
+          n=$(ls parts | wc -l | tr -d ' ')
+          if [ "$n" -ne 76 ]; then echo "missing parts: $n/76"; exit 1; fi
           cat parts/part* > RedPoker_iOS.tar.gz
-          ls -la RedPoker_iOS.tar.gz
+          size=$(wc -c < RedPoker_iOS.tar.gz | tr -d ' ')
+          echo "archive size=$size expected=$EXPECTED"
+          if [ "$size" -ne "$EXPECTED" ]; then echo "size mismatch"; exit 1; fi
           mkdir -p proj
           tar -xzf RedPoker_iOS.tar.gz -C proj
           ls proj | head -30
@@ -39,7 +50,7 @@ jobs:
             -sdk iphoneos \
             -derivedDataPath "$RUNNER_TEMP/dd" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-            build 2>&1 | tail -100
+            build 2>&1 | tail -120
 
       - name: Package IPA
         run: |
