@@ -41,10 +41,13 @@ jobs:
           find proj -name "*.sh" -print0 | xargs -0 chmod +x 2>/dev/null || true
           ls proj | head -30
       - name: Apply UI patch source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          curl -sSfL -o "proj/Classes/Native/Bulk_Unity.Model_1.cpp" "https://github.com/${{ github.repository }}/releases/download/v1/patch_Bulk_Unity.Model_1.cpp"
-          grep -c "0.0f), /\*hidden argument\*/" "proj/Classes/Native/Bulk_Unity.Model_1.cpp" || true
-          ls -la "proj/Classes/Native/Bulk_Unity.Model_1.cpp"
+          mkdir -p /tmp/patch
+          gh release download v1 --repo "${{ github.repository }}" --pattern 'patch_Bulk_Unity.Model_1.cpp' --dir /tmp/patch --clobber
+          cp /tmp/patch/patch_Bulk_Unity.Model_1.cpp proj/Classes/Native/Bulk_Unity.Model_1.cpp
+          grep -c "0.0f), /\*hidden argument\*/" proj/Classes/Native/Bulk_Unity.Model_1.cpp || true
 
       - name: Stub missing native plugins (chat / bugly / recorder)
         run: |
