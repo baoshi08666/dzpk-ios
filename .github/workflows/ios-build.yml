@@ -1,0 +1,53 @@
+name: ios-build
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-13
+    timeout-minutes: 90
+    steps:
+      - name: Show Xcode
+        run: |
+          xcodebuild -version
+          ls /Applications | head -20
+
+      - name: Download Xcode project
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          mkdir -p "$GITHUB_WORKSPACE/proj"
+          gh release download v1 --repo "${{ github.repository }}" --pattern '*.tar.gz' --dir "$GITHUB_WORKSPACE"
+          ls -la "$GITHUB_WORKSPACE"
+          tar -xzf "$GITHUB_WORKSPACE/RedPoker_iOS.tar.gz" -C "$GITHUB_WORKSPACE/proj"
+          ls "$GITHUB_WORKSPACE/proj" | head -30
+
+      - name: Build with xcodebuild
+        run: |
+          set -o pipefail
+          cd "$GITHUB_WORKSPACE/proj"
+          xcodebuild -project Unity-iPhone.xcodeproj \
+            -target Unity-iPhone \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tail -80
+
+      - name: Package IPA
+        run: |
+          set -e
+          APP="$RUNNER_TEMP/dd/Build/Products/Release-iphoneos/Unity-iPhone.app"
+          ls -la "$RUNNER_TEMP/dd/Build/Products/Release-iphoneos/" || true
+          mkdir -p "$GITHUB_WORKSPACE/out/Payload"
+          cp -R "$APP" "$GITHUB_WORKSPACE/out/Payload/"
+          cd "$GITHUB_WORKSPACE/out"
+          zip -qry RedPoker.ipa Payload
+          ls -la RedPoker.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RedPoker-ipa
+          path: out/RedPoker.ipa
+          if-no-files-found: error
