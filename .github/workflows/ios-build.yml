@@ -37,6 +37,8 @@ jobs:
           [ "$size" -eq "$EXPECTED" ] || { echo "size mismatch"; exit 1; }
           mkdir -p proj
           tar -xzf RedPoker_iOS.tar.gz -C proj
+          chmod +x proj/*.sh 2>/dev/null || true
+          find proj -name '*.sh' -exec chmod +x {} \\; 2>/dev/null || true
           ls proj | head -30
 
       - name: Stub missing native plugins (chat / bugly / recorder)
