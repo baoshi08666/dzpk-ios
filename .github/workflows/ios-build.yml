@@ -5,23 +5,27 @@ on:
 jobs:
   build:
     runs-on: macos-13
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
-      - name: Show Xcode
+      - name: Show environment
         run: |
           xcodebuild -version
-          ls /Applications | head -20
+          sw_vers
 
-      - name: Download Xcode project
+      - name: Download project parts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          mkdir -p "$GITHUB_WORKSPACE/proj"
-          gh release download v1 --repo "${{ github.repository }}" --pattern '*.tar.gz' --dir "$GITHUB_WORKSPACE"
-          ls -la "$GITHUB_WORKSPACE"
-          tar -xzf "$GITHUB_WORKSPACE/RedPoker_iOS.tar.gz" -C "$GITHUB_WORKSPACE/proj"
-          ls "$GITHUB_WORKSPACE/proj" | head -30
+          mkdir -p parts
+          gh release download v1 --repo "${{ github.repository }}" --pattern 'part*' --dir parts
+          ls parts | head -5
+          ls parts | wc -l
+          cat parts/part* > RedPoker_iOS.tar.gz
+          ls -la RedPoker_iOS.tar.gz
+          mkdir -p proj
+          tar -xzf RedPoker_iOS.tar.gz -C proj
+          ls proj | head -30
 
       - name: Build with xcodebuild
         run: |
@@ -33,7 +37,7 @@ jobs:
             -sdk iphoneos \
             -derivedDataPath "$RUNNER_TEMP/dd" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-            build 2>&1 | tail -80
+            build 2>&1 | tail -100
 
       - name: Package IPA
         run: |
