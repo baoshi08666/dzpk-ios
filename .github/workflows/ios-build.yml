@@ -31,9 +31,6 @@ jobs:
             done
             [ -s "parts/part$n" ] || { echo "missing part$n"; exit 1; }
           done
-          n=$(ls parts | wc -l | tr -d ' ')
-          echo "parts=$n"
-          [ "$n" -eq 76 ] || { echo "wrong part count"; exit 1; }
           cat parts/part* > RedPoker_iOS.tar.gz
           size=$(wc -c < RedPoker_iOS.tar.gz | tr -d ' ')
           echo "archive size=$size expected=$EXPECTED"
@@ -50,15 +47,16 @@ jobs:
             -target Unity-iPhone \
             -configuration Release \
             -sdk iphoneos \
-            -derivedDataPath "$RUNNER_TEMP/dd" \
+            CONFIGURATION_BUILD_DIR="$GITHUB_WORKSPACE/build" \
+            ARCHS=arm64 VALID_ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-            build 2>&1 | tail -150
+            build 2>&1 | tail -200
 
       - name: Package IPA
         run: |
           set -e
-          APP="$RUNNER_TEMP/dd/Build/Products/Release-iphoneos/Unity-iPhone.app"
-          ls -la "$RUNNER_TEMP/dd/Build/Products/Release-iphoneos/" || true
+          APP="$GITHUB_WORKSPACE/build/Unity-iPhone.app"
+          ls -la "$GITHUB_WORKSPACE/build" || true
           mkdir -p "$GITHUB_WORKSPACE/out/Payload"
           cp -R "$APP" "$GITHUB_WORKSPACE/out/Payload/"
           cd "$GITHUB_WORKSPACE/out"
