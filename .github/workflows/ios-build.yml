@@ -39,7 +39,7 @@ jobs:
           tar -xzf RedPoker_iOS.tar.gz -C proj
           ls proj | head -30
 
-      - name: Stub out Ntalker plugin (chat disabled)
+      - name: Stub missing native plugins (chat / bugly / recorder)
         run: |
           cat > "$GITHUB_WORKSPACE/proj/Libraries/Plugins/iOS/CallByUnityController.mm" <<'EOF'
           #import <Foundation/Foundation.h>
@@ -54,6 +54,7 @@ jobs:
             void IMLogin(const char *userID, const char *token, int appID, const char *systemSender) {}
             void IMLoginOut() {}
             bool StartRecord() { return false; }
+            long StopRecord(bool isSend) { return 0; }
             void PlayVoice(const char *path) {}
             void StopVoice() {}
             bool IsPlayingVoice() { return false; }
@@ -69,6 +70,16 @@ jobs:
             int KeFuLogin(const char *userId, const char *userName) { return 0; }
             void KeFuLoginOut() {}
             int StartChat(const char *settingid, const char *groupName, const char *strbody) { return 0; }
+
+            void _BuglyInit(const char * appId, bool debug, int level) {}
+            void _BuglySetUserId(const char * userId) {}
+            void _BuglySetTag(int tag) {}
+            void _BuglySetKeyValue(const char * key, const char * value) {}
+            void _BuglyReportException(int type, const char * name, const char * reason, const char * stackTrace, const char * extras, bool quit) {}
+            void _BuglyDefaultConfig(const char * channel, const char * version, const char *user, const char * deviceId) {}
+            void _BuglyLogMessage(int level, const char * tag, const char * log) {}
+            void _BuglyConfigCrashReporterType(int type) {}
+            void _BuglySetExtraConfig(const char *key, const char * value) {}
           }
           EOF
           echo "stubbed"
@@ -83,6 +94,7 @@ jobs:
             -sdk iphoneos \
             CONFIGURATION_BUILD_DIR="$GITHUB_WORKSPACE/build" \
             ARCHS=arm64 VALID_ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
+            OTHER_LDFLAGS="-framework StoreKit -framework UserNotifications -lsqlite3 -lresolv" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             build 2>&1 | tail -200
 
