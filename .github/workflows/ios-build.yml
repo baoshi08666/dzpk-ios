@@ -16,26 +16,28 @@ jobs:
           uname -m
 
       - name: Download project parts
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
           EXPECTED=396909461
-          for attempt in 1 2 3 4 5; do
-            rm -rf parts RedPoker_iOS.tar.gz
-            mkdir -p parts
-            gh release download v1 --repo "${{ github.repository }}" --pattern 'part*' --dir parts --clobber || true
-            n=$(ls parts | wc -l | tr -d ' ')
-            echo "attempt $attempt: downloaded $n parts"
-            if [ "$n" -eq 76 ]; then break; fi
-            sleep 10
+          BASE="https://github.com/${{ github.repository }}/releases/download/v1"
+          rm -rf parts RedPoker_iOS.tar.gz
+          mkdir -p parts
+          for i in $(seq 0 75); do
+            n=$(printf "%03d" $i)
+            for attempt in 1 2 3 4 5; do
+              curl -sSfL --retry 3 --retry-delay 2 -o "parts/part$n" "$BASE/part$n" && break
+              echo "retry part$n ($attempt)"
+              sleep 3
+            done
+            [ -s "parts/part$n" ] || { echo "missing part$n"; exit 1; }
           done
           n=$(ls parts | wc -l | tr -d ' ')
-          if [ "$n" -ne 76 ]; then echo "missing parts: $n/76"; exit 1; fi
+          echo "parts=$n"
+          [ "$n" -eq 76 ] || { echo "wrong part count"; exit 1; }
           cat parts/part* > RedPoker_iOS.tar.gz
           size=$(wc -c < RedPoker_iOS.tar.gz | tr -d ' ')
           echo "archive size=$size expected=$EXPECTED"
-          if [ "$size" -ne "$EXPECTED" ]; then echo "size mismatch"; exit 1; fi
+          [ "$size" -eq "$EXPECTED" ] || { echo "size mismatch"; exit 1; }
           mkdir -p proj
           tar -xzf RedPoker_iOS.tar.gz -C proj
           ls proj | head -30
@@ -50,7 +52,7 @@ jobs:
             -sdk iphoneos \
             -derivedDataPath "$RUNNER_TEMP/dd" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-            build 2>&1 | tail -120
+            build 2>&1 | tail -150
 
       - name: Package IPA
         run: |
