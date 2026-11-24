@@ -37,17 +37,7 @@ jobs:
           [ "$size" -eq "$EXPECTED" ] || { echo "size mismatch"; exit 1; }
           mkdir -p proj
           tar -xzf RedPoker_iOS.tar.gz -C proj
-          chmod +x proj/*.sh 2>/dev/null || true
-          find proj -name "*.sh" -print0 | xargs -0 chmod +x 2>/dev/null || true
           ls proj | head -30
-      - name: Apply UI patch source
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p /tmp/patch
-          gh release download v1 --repo "${{ github.repository }}" --pattern 'patch_Bulk_Unity.Model_1.cpp' --dir /tmp/patch --clobber
-          cp /tmp/patch/patch_Bulk_Unity.Model_1.cpp proj/Classes/Native/Bulk_Unity.Model_1.cpp
-          grep -c "0.0f), /\*hidden argument\*/" proj/Classes/Native/Bulk_Unity.Model_1.cpp || true
 
       - name: Stub missing native plugins (chat / bugly / recorder)
         run: |
@@ -94,6 +84,15 @@ jobs:
           EOF
           echo "stubbed"
 
+
+      - name: Patch Info.plist (hide status bar)
+        run: |
+          cd "$GITHUB_WORKSPACE/proj"
+          ls -la Info.plist
+          plutil -replace UIStatusBarHidden -bool YES Info.plist || plutil -insert UIStatusBarHidden -bool YES Info.plist
+          plutil -replace UIViewControllerBasedStatusBarAppearance -bool NO Info.plist || plutil -insert UIViewControllerBasedStatusBarAppearance -bool NO Info.plist
+          plutil -replace CFBundleShortVersionString -string 1.1.2 Info.plist || plutil -insert CFBundleShortVersionString -string 1.1.2 Info.plist
+          plutil -p Info.plist | grep -E "UIStatusBarHidden|UIViewControllerBased|CFBundleShortVersionString"
       - name: Build with xcodebuild
         run: |
           set -o pipefail
@@ -111,7 +110,7 @@ jobs:
       - name: Package IPA
         run: |
           set -e
-          APP=$(ls -d "$GITHUB_WORKSPACE/build"/*.app | head -1)
+          APP="$GITHUB_WORKSPACE/build/Unity-iPhone.app"
           ls -la "$GITHUB_WORKSPACE/build" || true
           mkdir -p "$GITHUB_WORKSPACE/out/Payload"
           cp -R "$APP" "$GITHUB_WORKSPACE/out/Payload/"
