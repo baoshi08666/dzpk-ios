@@ -116,7 +116,7 @@ jobs:
       - name: Package IPA
         run: |
           set -e
-          APP="$GITHUB_WORKSPACE/build/Unity-iPhone.app"
+          APP=$(ls -d "$GITHUB_WORKSPACE/build"/*.app | head -1)
           ls -la "$GITHUB_WORKSPACE/build" || true
           mkdir -p "$GITHUB_WORKSPACE/out/Payload"
           cp -R "$APP" "$GITHUB_WORKSPACE/out/Payload/"
