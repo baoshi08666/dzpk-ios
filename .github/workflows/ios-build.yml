@@ -94,6 +94,15 @@ jobs:
           plutil -replace CFBundleShortVersionString -string 1.1.2 Info.plist || plutil -insert CFBundleShortVersionString -string 1.1.2 Info.plist
           plutil -p Info.plist | grep -E "UIStatusBarHidden|UIViewControllerBased|CFBundleShortVersionString"
 
+
+      - name: Apply real photo plugin
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/patch2
+          gh release download v1 --repo "${{ github.repository }}" --pattern 'patch_CallByUnityController.mm' --dir /tmp/patch2 --clobber
+          cp /tmp/patch2/patch_CallByUnityController.mm proj/Libraries/Plugins/iOS/CallByUnityController.mm
+          grep -c "CPPhotoPicker" proj/Libraries/Plugins/iOS/CallByUnityController.mm
       - name: Fix script permissions
         run: |
           chmod +x proj/*.sh 2>/dev/null || true
